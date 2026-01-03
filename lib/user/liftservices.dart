@@ -358,9 +358,8 @@ class ProvideLiftForm extends StatefulWidget {
 class _ProvideLiftFormState extends State<ProvideLiftForm> {
   TextEditingController pickup = TextEditingController();
   TextEditingController drop = TextEditingController();
-  TextEditingController vehicle = TextEditingController();
+  TextEditingController vehicleNumber = TextEditingController();
   TextEditingController seats = TextEditingController();
-  TextEditingController fare = TextEditingController();
 
   DateTime? selectedDate;
   TimeOfDay? selectedTime;
@@ -369,15 +368,26 @@ class _ProvideLiftFormState extends State<ProvideLiftForm> {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        TextField(controller: pickup, decoration: inputStyle("Pickup Location", Icons.my_location)),
+        TextField(
+          controller: pickup,
+          decoration: inputStyle("Pickup Location", Icons.my_location),
+        ),
         SizedBox(height: 8),
-        TextField(controller: drop, decoration: inputStyle("Drop Location", Icons.location_on)),
+        TextField(
+          controller: drop,
+          decoration: inputStyle("Drop Location", Icons.location_on),
+        ),
         SizedBox(height: 8),
-        TextField(controller: vehicle, decoration: inputStyle("Vehicle Details", Icons.directions_car)),
+        TextField(
+          controller: vehicleNumber,
+          decoration: inputStyle("Vehicle Number", Icons.directions_car),
+        ),
         SizedBox(height: 8),
-        TextField(controller: seats, keyboardType: TextInputType.number, decoration: inputStyle("Seats Available", Icons.event_seat)),
-        SizedBox(height: 8),
-        TextField(controller: fare, keyboardType: TextInputType.number, decoration: inputStyle("Fare per Seat", Icons.currency_rupee)),
+        TextField(
+          controller: seats,
+          keyboardType: TextInputType.number,
+          decoration: inputStyle("Seats Available", Icons.event_seat),
+        ),
         SizedBox(height: 8),
         ElevatedButton(
           onPressed: () async {
@@ -389,29 +399,44 @@ class _ProvideLiftFormState extends State<ProvideLiftForm> {
             );
             if (result != null) setState(() => selectedDate = result);
           },
-          style: ElevatedButton.styleFrom(backgroundColor: Colors.blue.shade50, foregroundColor: Colors.blue, minimumSize: Size(double.infinity, 50)),
-          child: Text(selectedDate == null ? "Select Date" : "${selectedDate!.day}-${selectedDate!.month}-${selectedDate!.year}"),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.blue.shade50,
+            foregroundColor: Colors.blue,
+            minimumSize: Size(double.infinity, 50),
+          ),
+          child: Text(selectedDate == null
+              ? "Select Date"
+              : "${selectedDate!.day}-${selectedDate!.month}-${selectedDate!.year}"),
         ),
         SizedBox(height: 8),
         ElevatedButton(
           onPressed: () async {
-            final result = await showTimePicker(context: context, initialTime: TimeOfDay.now());
+            final result = await showTimePicker(
+                context: context, initialTime: TimeOfDay.now());
             if (result != null) setState(() => selectedTime = result);
           },
-          style: ElevatedButton.styleFrom(backgroundColor: Colors.blue.shade50, foregroundColor: Colors.blue, minimumSize: Size(double.infinity, 50)),
-          child: Text(selectedTime == null ? "Select Time" : selectedTime!.format(context)),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.blue.shade50,
+            foregroundColor: Colors.blue,
+            minimumSize: Size(double.infinity, 50),
+          ),
+          child: Text(selectedTime == null
+              ? "Select Time"
+              : selectedTime!.format(context)),
         ),
         SizedBox(height: 12),
         SizedBox(
           width: double.infinity,
           child: ElevatedButton(
             onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Lift Published Successfully")));
+              ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text("Lift Published Successfully")));
             },
             child: Text("Publish Lift"),
-            style: ElevatedButton.styleFrom(minimumSize: Size(double.infinity, 50), backgroundColor: Colors.blue),
+            style: ElevatedButton.styleFrom(
+                minimumSize: Size(double.infinity, 50), backgroundColor: Colors.blue),
           ),
-        )
+        ),
       ],
     );
   }

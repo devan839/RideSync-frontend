@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'dart:io';
 
 class UserProfilePage extends StatefulWidget {
   @override
@@ -23,7 +25,8 @@ class _UserProfilePageState extends State<UserProfilePage> {
   bool idProofUploaded = false;
 
   // Profile image
-  bool profileUploaded = false;
+  File? profileImageFile;
+  final ImagePicker _picker = ImagePicker();
 
   @override
   void dispose() {
@@ -38,20 +41,16 @@ class _UserProfilePageState extends State<UserProfilePage> {
     super.dispose();
   }
 
-  void _pickProfileImage() {
-    setState(() {
-      profileUploaded = true;
-    });
-    ScaffoldMessenger.of(context)
-        .showSnackBar(const SnackBar(content: Text("Profile photo uploaded")));
-  }
-
-  void _pickIDProof() {
-    setState(() {
-      idProofUploaded = true;
-    });
-    ScaffoldMessenger.of(context)
-        .showSnackBar(SnackBar(content: Text("$idProofType uploaded")));
+  // Pick profile image
+  void _pickProfileImage() async {
+    final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
+    if (image != null) {
+      setState(() {
+        profileImageFile = File(image.path);
+      });
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text("Profile photo uploaded")));
+    }
   }
 
   void _addVehicleField() {
@@ -72,7 +71,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
   void _submitProfile() {
     if (!_formKey.currentState!.validate()) return;
 
-    if (!profileUploaded) {
+    if (profileImageFile == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Please upload a profile photo")),
       );
@@ -115,24 +114,24 @@ class _UserProfilePageState extends State<UserProfilePage> {
           key: _formKey,
           child: Column(
             children: [
+              // Profile Avatar
               CircleAvatar(
                 radius: 60,
-                backgroundColor:
-                    profileUploaded ? Colors.green : Colors.blue.shade700,
-                child: profileUploaded
-                    ? const Icon(Icons.check, size: 40, color: Colors.white)
-                    : const Icon(Icons.person, size: 60, color: Colors.white),
+                backgroundImage:
+                    profileImageFile != null ? FileImage(profileImageFile!) : null,
+                child: profileImageFile == null
+                    ? const Icon(Icons.person, size: 60, color: Colors.white)
+                    : null,
+                
               ),
               const SizedBox(height: 8),
               const Text("Upload profile photo"),
               const SizedBox(height: 6),
               ElevatedButton.icon(
                 icon: const Icon(Icons.upload_file),
-                label: Text(
-                  profileUploaded
-                      ? "Change Profile Photo"
-                      : "Upload Profile Photo",
-                ),
+                label: Text(profileImageFile != null
+                    ? "Change Profile Photo"
+                    : "Upload Profile Photo"),
                 style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.blue.shade700),
                 onPressed: _pickProfileImage,
@@ -209,8 +208,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
                   "Passport",
                   "Voter ID",
                 ]
-                    .map((e) =>
-                        DropdownMenuItem(value: e, child: Text(e)))
+                    .map((e) => DropdownMenuItem(value: e, child: Text(e)))
                     .toList(),
                 onChanged: (v) {
                   if (v != null) {
@@ -225,10 +223,21 @@ class _UserProfilePageState extends State<UserProfilePage> {
                 icon: const Icon(Icons.upload_file),
                 label: Text(idProofUploaded
                     ? "$idProofType ✅"
-                    : idProofType),
+                    : idProofType), // just show label, no image
                 style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.blue.shade700),
-                onPressed: _pickIDProof,
+                onPressed: () async {
+                  // pick ID proof but do nothing else with image
+                  final XFile? image = await _picker.pickImage(
+                      source: ImageSource.gallery);
+                  if (image != null) {
+                    setState(() {
+                      idProofUploaded = true;
+                    });
+                    ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text("$idProofType uploaded")));
+                  }
+                },
               ),
 
               const SizedBox(height: 20),

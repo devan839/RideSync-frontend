@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'dart:io';
 
 void main() {
-  runApp(MaterialApp(
-    debugShowCheckedModeBanner: false,
-    home: VehicleManagementPage(),
-  ));
+  runApp(
+    MaterialApp(
+      debugShowCheckedModeBanner: false,
+      home: VehicleManagementPage(),
+    ),
+  );
 }
 
 class VehicleManagementPage extends StatefulWidget {
@@ -13,8 +17,6 @@ class VehicleManagementPage extends StatefulWidget {
 }
 
 class _VehicleManagementPageState extends State<VehicleManagementPage> {
-  final _formKey = GlobalKey<FormState>();
-
   // ---------------- Basic Info ----------------
   final _vehicleNumberController = TextEditingController();
   final _ownerNameController = TextEditingController();
@@ -23,6 +25,10 @@ class _VehicleManagementPageState extends State<VehicleManagementPage> {
   bool showRCDetails = false;
   String _vehicleClass = "MCWG";
   String fuelType = "Petrol";
+  String cabType = "SUV";
+
+  final List<String> cabTypes = ["SUV", "Hatchback", "Sedan", "MUV/MPV"];
+
   final _modelController = TextEditingController();
   final _seatingController = TextEditingController();
   final _rcExpiryController = TextEditingController();
@@ -38,27 +44,29 @@ class _VehicleManagementPageState extends State<VehicleManagementPage> {
   final _policyExpiryController = TextEditingController();
   String insuranceDocImage = "";
 
-  // ---------------- Helper Methods ----------------
-  void toggleRCDetails() {
-    setState(() {
-      showRCDetails = !showRCDetails;
-    });
+  // ---------------- Helpers ----------------
+  void toggleRCDetails() => setState(() => showRCDetails = !showRCDetails);
+  void toggleInsuranceDetails() =>
+      setState(() => showInsuranceDetails = !showInsuranceDetails);
+
+  // ---------------- Image Picker ----------------
+  void _pickImage(String type) async {
+    final ImagePicker _picker = ImagePicker();
+    final XFile? pickedFile = await _picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 80,
+    );
+
+    if (pickedFile != null) {
+      setState(() {
+        if (type == "rcFront") rcFrontImage = pickedFile.path;
+        if (type == "rcBack") rcBackImage = pickedFile.path;
+        if (type == "insurance") insuranceDocImage = pickedFile.path;
+      });
+    }
   }
 
-  void toggleInsuranceDetails() {
-    setState(() {
-      showInsuranceDetails = !showInsuranceDetails;
-    });
-  }
-
-  void _pickImage(String type) {
-    setState(() {
-      if (type == "rcFront") rcFrontImage = "Image selected";
-      if (type == "rcBack") rcBackImage = "Image selected";
-      if (type == "insurance") insuranceDocImage = "Image selected";
-    });
-  }
-
+  // ---------------- Date Picker Field ----------------
   Widget _buildDateField(String label, TextEditingController controller) {
     return TextFormField(
       controller: controller,
@@ -82,6 +90,7 @@ class _VehicleManagementPageState extends State<VehicleManagementPage> {
     );
   }
 
+  // ---------------- Upload Button ----------------
   Widget _buildUploadButton(String label, String type) {
     String status = "";
     if (type == "rcFront") status = rcFrontImage;
@@ -95,8 +104,10 @@ class _VehicleManagementPageState extends State<VehicleManagementPage> {
     );
   }
 
+  // ---------------- Save Vehicle ----------------
   void saveVehicle() {
-    if (_vehicleNumberController.text.isEmpty || _ownerNameController.text.isEmpty) {
+    if (_vehicleNumberController.text.isEmpty ||
+        _ownerNameController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("Please fill Vehicle Number and Owner Name")),
       );
@@ -107,28 +118,23 @@ class _VehicleManagementPageState extends State<VehicleManagementPage> {
       if (_modelController.text.isEmpty ||
           _seatingController.text.isEmpty ||
           _rcExpiryController.text.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Please fill all RC details")),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text("Please fill all RC details")));
+        return;
+      }
+
+      if (_vehicleClass == "LMV-CAB" && cabType.isEmpty) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text("Please select Cab Type")));
         return;
       }
     }
 
-    if (showInsuranceDetails) {
-      if (_insuranceProviderController.text.isEmpty ||
-          _policyNumberController.text.isEmpty ||
-          _policyStartController.text.isEmpty ||
-          _policyExpiryController.text.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Please fill all Insurance details")),
-        );
-        return;
-      }
-    }
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text("Vehicle saved successfully")),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text("Vehicle saved successfully")));
   }
 
   @override
@@ -142,7 +148,6 @@ class _VehicleManagementPageState extends State<VehicleManagementPage> {
             style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
           ),
         ),
-        elevation: 0,
       ),
       body: SingleChildScrollView(
         padding: EdgeInsets.all(16),
@@ -167,22 +172,20 @@ class _VehicleManagementPageState extends State<VehicleManagementPage> {
             ),
             SizedBox(height: 10),
 
-            // -------- RC Details Toggle --------
+            // -------- RC Toggle --------
             TextButton.icon(
               onPressed: toggleRCDetails,
               icon: Icon(showRCDetails ? Icons.expand_less : Icons.expand_more),
               label: Text("RC Details"),
             ),
 
-            // -------- RC Details Form --------
+            // -------- RC Details --------
             if (showRCDetails)
               Card(
                 elevation: 2,
-                margin: EdgeInsets.symmetric(vertical: 10),
                 child: Padding(
                   padding: EdgeInsets.all(12),
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       DropdownButtonFormField<String>(
                         value: _vehicleClass,
@@ -190,15 +193,37 @@ class _VehicleManagementPageState extends State<VehicleManagementPage> {
                           labelText: "Vehicle Class",
                           border: OutlineInputBorder(),
                         ),
-                        items: ["MCWG", "MCWOG", "LMV", "LMV-CAB", "LMV-NT", "LMV-TR"]
-                            .map((e) => DropdownMenuItem(value: e, child: Text(e)))
+                        items: ["MCWG", "MCWOG", "LMV-CAB", "LMV-NT"]
+                            .map(
+                              (e) => DropdownMenuItem(value: e, child: Text(e)),
+                            )
                             .toList(),
                         onChanged: (v) {
-                          setState(() {
-                            _vehicleClass = v!;
-                          });
+                          setState(() => _vehicleClass = v!);
                         },
                       ),
+
+                      // -------- Cab Type (Only LMV-CAB) --------
+                      if (_vehicleClass == "LMV-CAB") ...[
+                        SizedBox(height: 10),
+                        DropdownButtonFormField<String>(
+                          value: cabType,
+                          decoration: InputDecoration(
+                            labelText: "Cab Type",
+                            border: OutlineInputBorder(),
+                          ),
+                          items: cabTypes
+                              .map(
+                                (e) =>
+                                    DropdownMenuItem(value: e, child: Text(e)),
+                              )
+                              .toList(),
+                          onChanged: (v) {
+                            setState(() => cabType = v!);
+                          },
+                        ),
+                      ],
+
                       SizedBox(height: 10),
                       DropdownButtonFormField(
                         value: fuelType,
@@ -207,7 +232,9 @@ class _VehicleManagementPageState extends State<VehicleManagementPage> {
                           border: OutlineInputBorder(),
                         ),
                         items: ["Petrol", "Diesel", "Electric", "CNG"]
-                            .map((e) => DropdownMenuItem(value: e, child: Text(e)))
+                            .map(
+                              (e) => DropdownMenuItem(value: e, child: Text(e)),
+                            )
                             .toList(),
                         onChanged: (v) => setState(() => fuelType = v!),
                       ),
@@ -232,21 +259,18 @@ class _VehicleManagementPageState extends State<VehicleManagementPage> {
                       _buildDateField("RC Expiry Date", _rcExpiryController),
                       SizedBox(height: 10),
                       _buildUploadButton("Upload RC Front", "rcFront"),
-                      SizedBox(height: 5),
                       _buildUploadButton("Upload RC Back", "rcBack"),
                     ],
                   ),
                 ),
               ),
-
-            // -------- Insurance Details Toggle --------
             TextButton.icon(
               onPressed: toggleInsuranceDetails,
-              icon: Icon(showInsuranceDetails ? Icons.expand_less : Icons.expand_more),
+              icon: Icon(
+                showInsuranceDetails ? Icons.expand_less : Icons.expand_more,
+              ),
               label: Text("Insurance Details"),
-            ),
-
-            // -------- Insurance Form --------
+            ), // -------- Insurance Form --------
             if (showInsuranceDetails)
               Card(
                 elevation: 2,
@@ -279,29 +303,44 @@ class _VehicleManagementPageState extends State<VehicleManagementPage> {
                           border: OutlineInputBorder(),
                         ),
                         items: ["Third Party", "Comprehensive"]
-                            .map((e) => DropdownMenuItem(value: e, child: Text(e)))
+                            .map(
+                              (e) => DropdownMenuItem(value: e, child: Text(e)),
+                            )
                             .toList(),
                         onChanged: (v) => setState(() => policyType = v!),
                       ),
                       SizedBox(height: 10),
-                      _buildDateField("Policy Start Date", _policyStartController),
+                      _buildDateField(
+                        "Policy Start Date",
+                        _policyStartController,
+                      ),
                       SizedBox(height: 10),
-                      _buildDateField("Policy Expiry Date", _policyExpiryController),
+                      _buildDateField(
+                        "Policy Expiry Date",
+                        _policyExpiryController,
+                      ),
                       SizedBox(height: 10),
-                      _buildUploadButton("Upload Insurance Document", "insurance"),
+                      _buildUploadButton(
+                        "Upload Insurance Document",
+                        "insurance",
+                      ),
                     ],
                   ),
                 ),
               ),
-
             SizedBox(height: 20),
             SizedBox(
               width: double.infinity,
               height: 50,
               child: ElevatedButton(
-                style: ElevatedButton.styleFrom(backgroundColor: Colors.blue.shade700),
-                child: Text("Save Vehicle", style: TextStyle(color: Colors.white)),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blue.shade700,
+                ),
                 onPressed: saveVehicle,
+                child: Text(
+                  "Save Vehicle",
+                  style: TextStyle(color: Colors.white),
+                ),
               ),
             ),
           ],
